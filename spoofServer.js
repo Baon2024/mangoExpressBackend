@@ -1,7 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-
+const Twilio = require('twilio');
+const ngrok = require('ngrok');
 
 
 // Initialize Express app
@@ -13,8 +14,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const {
+    ELEVENLABS_API_KEY,
+    ELEVENLABS_AGENT_ID,
+    TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN,
+    TWILIO_PHONE_NUMBER,
+    OPENAI_API_KEY,
+    GOOGLE_APPLICATION_CREDENTIALS
+  } = process.env;
 
+  console.log("twilio phone number is:", TWILIO_PHONE_NUMBER);
 
+// Initialize Twilio client
+const twilioClient = new Twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
 
   const randomSentences = [
@@ -58,31 +71,40 @@ app.post('/SpoofEndpoint', async (req, res) => {
     const time = Math.random();
     const randomTime = time * 1000
     console.log("randomTime is:", randomTime);
+
+    const realNumber = '+447311252643'; // Correctly formatted number +447311252643
+
+    const prompt = `You need to ask these questions: ${questionsToAsk}`;
+    const firstMessage = `Hi, I'm calling to ask you some questions. Are we okay to proceed?`
+    
+    
     
     setTimeout(() => {
 
         let spoofDataToReturn = [];
     console.log("spoofDataToReturn is:", spoofDataToReturn);
     
-    for (let i = 0; i < columnsOfDataToReturn; i++) {
+    /*for (let i = 0; i < columnsOfDataToReturn; i++) {
         const result = randomSentences[getRandomNumber()];
         console.log("result (random sentence) within for loop is:", result);
         spoofDataToReturn.push(result);
         
     
-    }
+    }*/ //Temporaryily removed for test
     console.log("spoofDataToReturn after data adding is:", spoofDataToReturn);
+    const response = ["Joe-Joe", "Cambridge", "£20"]
+    spoofDataToReturn.push(response);
 
     res.status(201).send(spoofDataToReturn);
-
-}, randomTime)
+    }, /*randomTime*/ 4500) 
+  })
 
   //add backend for making each call here
   // need to add prompt here for the API call to the agent: contextMessage will be inserted into prompt
   
   //see what the existing backend-call to Blank AI looks like in the backend github repo
 
-})
+//})
 
 
 
@@ -94,3 +116,10 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); 
 
+/*ngrok.connect(5005)
+  .then(url => {
+    console.log(`Ingress established at: ${url}`);
+  })
+  .catch(err => {
+    console.error('Failed to establish tunnel:', err);
+  });*/

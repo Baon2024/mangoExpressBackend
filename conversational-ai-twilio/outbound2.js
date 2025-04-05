@@ -17,6 +17,7 @@ import OpenAI from 'openai';
 import cors from '@fastify/cors';
 //const Fastify = require('fastify');
 //const cors = require('@fastify/cors');
+import { assembleAnswerWithLLm } from './assembleAnswerWithLLm.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -74,9 +75,9 @@ fastify.register(fastifyWs);
 
 // ✅ Register CORS plugin
 fastify.register(cors, {
-  origin: ['http://localhost:3002', 'https://cc7f-131-111-185-176.ngrok-free.app'], // Allowed origins
+  origin: ['http://localhost:3004', 'https://cc7f-131-111-185-176.ngrok-free.app'], // Allowed origins
   methods: ['GET', 'POST'], // Allowed HTTP methods
-  allowedHeaders: ['Content-Type', 'Authorization'] // Allowed headers
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Accept', 'X-Requested-With', 'redirect', 'Cache-Control', 'Pragma'] // Allowed headers
 });
 
 // ✅ Parse JSON requests
@@ -89,7 +90,7 @@ fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, bo
   }
 });
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8001;
 
 // Root route for health check
 fastify.get('/', async (_, reply) => {
@@ -126,14 +127,16 @@ async function getSignedUrl() {
 
 // Route to initiate outbound calls
 fastify.post('/outbound-call', async (request, reply) => {
-  const { number, prompt, first_message } = request.body;
+  const { number, prompt, first_message, questionNumber } = request.body;
   console.log("number is:", number, "prompt is:", prompt, "first_message is:", first_message);
 
   //okay, you need to send questions from frontend too, so they can be attached to input for LLM
 
+  //when testing locally, unblock questionNumber below, and remove it above || or add questionNumber to curl body
+
   const realNumber = '+447311252643'; // Correctly formatted number +447311252643
 
-  const questionNumber = 4
+  //const questionNumber = 4
   const questions = ["How much does a new Ferrari cost?", "What colour ferrari would you like?"]
 
   //i need to store number/realNumber, questionNumber and questions in a global state
@@ -144,6 +147,9 @@ fastify.post('/outbound-call', async (request, reply) => {
    stuffFromFrontendFunctionNeedToStore.realNumber = realNumber;
    stuffFromFrontendFunctionNeedToStore.questionNumber = questionNumber;
    stuffFromFrontendFunctionNeedToStore.questions = questions;
+   stuffFromFrontendFunctionNeedToStore.correctPrompt = prompt;
+   
+  
 
    console.log("value of stuffFromFrontendFunctionNeededToStore is:", stuffFromFrontendFunctionNeedToStore);
 
@@ -172,24 +178,21 @@ fastify.post('/outbound-call', async (request, reply) => {
     if (call) {
     // Store callSid temporarily
     // // Prevent Fastify from auto-replying
-      reply.hijack();
+    //  reply.hijack();
 
   callsInProgress[call.sid] = { reply }; //will need to delay reply until webhook endpoint, so block out reply below
 
     console.log("callsInProgress is:", callsInProgress, "and call.sid is:", call.sid);
 
-    // Prevent Fastify from sending a default response
-    
     console.log("reply.sent is:", reply.sent);
     //console.log("reply.send is:", reply.send);
 
-    /*reply.send({
+    reply.send({
       success: true,
       message: 'Call initiated',
       callSid: call.sid,
-    });*/
-    
-    return;
+    });
+    console.log("reply.sent after initial reply.send is:", reply.sent);
 
     }
   } catch (error) {
@@ -368,42 +371,70 @@ async function transcribeAudio(audioBuffer) {
             const transcript = await getTranscriptExternal(RecordingUrl);
             console.log("Transcript received:", transcript);
             //reply.send({ success: true, RecordingUrl, transcript });
+            
 
             //neeed tro retcieve questions and questionNumber from global state
             console.log("value of stuffFromFrontendFunctionNeededToStore is:", stuffFromFrontendFunctionNeedToStore);
             const questionNumber = stuffFromFrontendFunctionNeedToStore.questionNumber;
             const questions = stuffFromFrontendFunctionNeedToStore.questions;
+            const correctPrompt = stuffFromFrontendFunctionNeedToStore.correctPrompt;
+
+            //console.log("correctPrompt is:", correctPrompt);
 
 
             //then retrieve these values from sFFFNTS
 
             const prompt = `The number of questions is ${questionNumber}. The questions that were asked are: ${questions}. The transcript of the call is: ${transcript}`;
             
+            const prompt2 = `You need to extract answers from the transcript to answer each question listed below. 
+- The output **must** be a JSON array with exactly ${questionNumber} elements.
+- Each answer should directly match the question.
+- If the transcript does not contain an answer, return "I’m not sure."
+- Format example: ["answer1", "answer2", "answer3"].
+
+## Questions: 
+${correctPrompt}
+
+## Transcript:
+"${transcript}"`;
+
             console.log("the value of prompt is:", prompt);
 
             //okay, now add the call to the LLM here, and prompt engineering to show example of how to return array of answers
             const messages = [
                 {
                     role: "system",
-                    content: `You need to take the answers given by the user from the transcript, to answer the questions listed in the prompt. You can only answer the questions using the information in the transcript. The answer should be structured so that each answer is a string member of an array. The number of array items should match the number of questions: ${questionNumber}. See the example below. `,
+                    content: /*`You need to take the answers given by the user from the transcript, to answer the questions listed in the prompt. You can only answer the questions using the information in the transcript. The answer should be structured so that each answer is a string member of an array. The number of array items should match the number of questions: ${questionNumber}.Return the answers as a valid JSON array with one item per question. If an answer is missing, return "I’m not sure." Example format: ["answer1", "answer2", "answer3"]. `*/ `You need to extract answers from the transcript to answer each question listed in the prompt. 
+                    - ou are an assistant extracting answers from a call transcript.
+        - Only use the information present in the transcript to answer the questions.
+        - Return exactly ${questionNumber} answers in a valid JSON array..
+                    - The transcript is this: ${prompt2}.
+                    - If the transcript lacks an answer, insert "I’m not sure." in its place.
+                    - The format **must** be valid JSON: ["answer1", "answer2", ..., "answer${questionNumber}"].`,
                 },
                 {
                     role: "user",
-                    content: prompt,
+                    content: prompt2,
                 },
-                {
+                /*{
                     role: "user",
                     content: "The number of questions is: 3. The questions that were asked are: Where is Cambridge?, In what Country is Cambridge located?, How much does it cost to rent in Cambridge per year?. Transcript: ",
                 },
                 {
                     role: "assistant",
                     content: "['£170,000 pounds', 'blue']",
-                }
+                }*/
             ]
 
             //okay, so just need to get this to work
+            stuffFromFrontendFunctionNeedToStore.messages = messages;
+            
+            console.log("transcript length is:", transcript.length);
+
+
+            const parsedResponse = await assembleAnswerWithLLm(messages);
         
-            const response = await client.chat.completions.create({
+            /*const response = await client.chat.completions.create({
                 model: "gpt-4o-mini",
                 store: false,
                 messages: messages,
@@ -411,26 +442,21 @@ async function transcribeAudio(audioBuffer) {
             console.log("full response is:", response);
             console.log("response is:", response.choices[0].message);
 
-            //console.log("reply is:", reply);
+            const correctResponse = response.choices[0].message;
+            console.log("correctResponse is:", correctResponse.content);
+            const parsedResponse = JSON.parse(correctResponse.content);*/
+
+            console.log("parsedResponse is:", parsedResponse);
+
+            //need to add response to globalState
+            stuffFromFrontendFunctionNeedToStore.response = parsedResponse;   
+            console.log("stuffFromFrontendFunctionNeededToStore.response:", stuffFromFrontendFunctionNeedToStore.response);
             
-            //console.log("callsInProgress[CallSid] is:", callsInProgress[CallSid]);
-            if (callsInProgress[CallSid]) {
-                console.log("reply.sent is:", reply.sent);
-                if (!reply.sent) {
-                console.log('Sending response now');
-            callsInProgress[CallSid].reply.send({ 
-                success: true, 
-                message: 'Call completed', 
-                callSid: CallSid, 
-                transcript //that will actually need to be response.choices[0].message
-              });
-              return;
-                }
-              // Clean up memory
-              delete callsInProgress[CallSid];
-              delete stuffFromFrontendFunctionNeedToStore[questionNumber, questions];
             
-            }
+              //delete callsInProgress[CallSid];
+            delete stuffFromFrontendFunctionNeedToStore[questionNumber, questions];
+            
+            
            
 
         } catch (error) {
@@ -445,16 +471,77 @@ async function transcribeAudio(audioBuffer) {
     }
 });
 
-   /*
-  
-  curl -X POST     https://0ef6-131-111-185-176.ngrok-free.app/outbound-call \
+/*
+curl -X POST https://74d7-131-111-185-176.ngrok-free.app/outbound-call \
 -H "Content-Type: application/json" \
 -d '{
   "prompt": "You are Eric, an outbound car sales agent. You are calling to sell a new car to the customer. Be friendly and professional and answer all questions.",
   "first_message": "Hello Thor, my name is Eric, I heard you were looking for a new car! What model and color are you looking for?",
   "number": "447311252643"
 }'
-  */
+*/
+fastify.get('/retrieve-response', async (request, reply) => {
+
+    //console.log("request in /retrieveResponse endpoint is:", request);
+    reply.type('application/json');
+    reply
+    .header('Access-Control-Allow-Origin', '*')
+    .header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    /*.send()*/;
+
+    // If request is OPTIONS (preflight), do NOT modify or delete data
+    if (request.method === 'OPTIONS') {
+        return reply.code(204).send(); // Send a 204 No Content response
+    }
+
+    const messages = stuffFromFrontendFunctionNeedToStore.messages;
+    console.log("messages for LLM in /retrieve-response endpoint:", messages);
+
+
+     /*const response = await client.chat.completions.create({
+                model: "gpt-4o-mini",
+                store: false,
+                messages: messages,
+            });
+            console.log("full response is:", response);
+            console.log("response is:", response.choices[0].message);
+
+    const correctResponse = response.choices[0].message;
+    console.log("correctResponse is:", correctResponse.content);
+    const parsedResponse = JSON.parse(correctResponse.content);
+
+    console.log("parsedResponse in /retrieve-response endpoitn:", parsedResponse);*/
+
+    const correctResponse = stuffFromFrontendFunctionNeedToStore.response;
+    console.log("correctResponse in /retrieveResponse endpoint is:", correctResponse);
+
+    const number = stuffFromFrontendFunctionNeedToStore.realNumber;
+    console.log("number in /retrieveResponse endpoint is:", number);
+
+    //I need to create this data structure: ['+447912345678', 'Joe-Joe', 'Cambridge', '£20']
+    //so, need to stringify number
+    //const stringifyNumber = JSON.stringify(number);
+    //console.log("stringified number should be:", stringifyNumber);
+
+    correctResponse.unshift(number);
+    console.log("correctResponse after adding stringifiedNumber:", correctResponse);
+    
+    //lets try and make these delete if request doesn't have the options header??
+    delete stuffFromFrontendFunctionNeedToStore.response;
+    delete stuffFromFrontendFunctionNeedToStore.realNumber;
+    delete stuffFromFrontendFunctionNeedToStore.questions;
+    delete stuffFromFrontendFunctionNeedToStore.questionNumber;
+    delete stuffFromFrontendFunctionNeedToStore.messages;
+    delete stuffFromFrontendFunctionNeedToStore.correctPrompt;
+
+    console.log("stuffFromFrontendNeededToStore is now:", stuffFromFrontendFunctionNeedToStore);
+
+    reply.code(201).send(correctResponse);
+
+})
+
+//curl -X GET https://74d7-131-111-185-176.ngrok-free.app/retrieve-response
 
 // TwiML route for outbound calls
 fastify.all('/outbound-call-twiml', async (request, reply) => {
@@ -693,7 +780,7 @@ fastify.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
 
   /*
   
-  curl -X POST https://125a-131-111-185-176.ngrok-free.app/outbound-call \
+  curl -X POST https://69fc-131-111-185-176.ngrok-free.app/outbound-call \
 -H "Content-Type: application/json" \
 -d '{
   "prompt": "You are Eric, an outbound car sales agent. You are calling to sell a new car to the customer. Be friendly and professional and answer all questions.",
