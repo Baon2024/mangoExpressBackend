@@ -3,14 +3,14 @@ const twilio = require("twilio"); // Or, for ESM: import twilio from "twilio";
 
 // Find your Account SID and Auth Token at twilio.com/console
 // and set the environment variables. See http://twil.io/secure
-const TWILIO_ACCOUNT_SID = 'AC11c4c49551f9e9fe6779d9291d9e4b66';
-const TWILIO_AUTH_TOKEN = 'c88ffb414481af03ca81e825d7f2e4d1';
+//const TWILIO_ACCOUNT_SID = 'AC11c4c49551f9e9fe6779d9291d9e4b66';
+//const TWILIO_AUTH_TOKEN = 'c88ffb414481af03ca81e825d7f2e4d1';
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const VoiceResponse = require('twilio').twiml.VoiceResponse;
 const ngrok = require('ngrok');
-const authtoken_from_env = '2up3M8Zq718vQNPYkTrYAWfgp6r_7tykyYLxqhMAPr2BXna6D';
+//const authtoken_from_env = '2up3M8Zq718vQNPYkTrYAWfgp6r_7tykyYLxqhMAPr2BXna6D';
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
