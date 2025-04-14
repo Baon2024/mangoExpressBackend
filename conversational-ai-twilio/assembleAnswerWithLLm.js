@@ -6,7 +6,8 @@ dotenv.config();
 
  //lets try and add in llama or deepseeck, via HF inference
  import { HfInference } from "@huggingface/inference";
- const hf = new HfInference('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');
+ //const hf = new HfInference('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');
+ const hf = new HfInference(process.env.HUGGINGFACE);
 
  /* 
  // Chat completion API
