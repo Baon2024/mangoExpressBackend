@@ -20,7 +20,7 @@ console.log(out.choices[0].message);
  */
 
  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY, // Securely load API key
+    apiKey: process.env.OPENAI_API_KEY, // Need to add new openAi key, as push to gitrepo disabled it
 });
         
 export async function assembleAnswerWithLLm(messages) {
