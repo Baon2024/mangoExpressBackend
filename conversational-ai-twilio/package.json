@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node outbound3.js",
-    "build": "echo 'No build step required'"
+    "build": "pnpm install && echo 'Dependencies installed'"
   },
   "keywords": [],
   "author": "",
