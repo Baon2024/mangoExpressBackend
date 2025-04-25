@@ -144,7 +144,7 @@ fastify.post('/outbound-call', async (request, reply) => {
    const trialPrompt = `You are a agent calling a number to ask questions the user has given you. You need to ask the person who answers ${questionNumber} questions. The questions are: ${questions} `;
    const trialFirstMessage = "Hi, I'm calling on behalf of my client. I would like to ask you a few questions.";
 
-   stuffFromFrontendFunctionNeedToStore.realNumber = realNumber;
+   stuffFromFrontendFunctionNeedToStore.number = number;
    stuffFromFrontendFunctionNeedToStore.questionNumber = questionNumber;
    stuffFromFrontendFunctionNeedToStore.questions = questions;
    stuffFromFrontendFunctionNeedToStore.correctPrompt = prompt;
@@ -162,7 +162,7 @@ fastify.post('/outbound-call', async (request, reply) => {
   try {
     const call = await twilioClient.calls.create({
       from: TWILIO_PHONE_NUMBER,
-      to: /*number*/ realNumber, //for testing
+      to: number /*realNumber*/, //for testing
       url: `https://${request.headers.host}/outbound-call-twiml?prompt=${encodeURIComponent(
         prompt
       )}&first_message=${encodeURIComponent(first_message)}`,
@@ -563,7 +563,7 @@ fastify.get('/retrieve-response', async (request, reply) => {
     const correctResponse = stuffFromFrontendFunctionNeedToStore.response;
     console.log("correctResponse in /retrieveResponse endpoint is:", correctResponse);
 
-    const number = stuffFromFrontendFunctionNeedToStore.realNumber;
+    const number = stuffFromFrontendFunctionNeedToStore.number;
     console.log("number in /retrieveResponse endpoint is:", number);
 
     //I need to create this data structure: ['+447912345678', 'Joe-Joe', 'Cambridge', '£20']
@@ -576,7 +576,7 @@ fastify.get('/retrieve-response', async (request, reply) => {
     
     //lets try and make these delete if request doesn't have the options header??
     delete stuffFromFrontendFunctionNeedToStore.response;
-    delete stuffFromFrontendFunctionNeedToStore.realNumber;
+    delete stuffFromFrontendFunctionNeedToStore.number;
     delete stuffFromFrontendFunctionNeedToStore.questions;
     delete stuffFromFrontendFunctionNeedToStore.questionNumber;
     delete stuffFromFrontendFunctionNeedToStore.messages;
