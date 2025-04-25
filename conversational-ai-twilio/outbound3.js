@@ -18,6 +18,7 @@ import cors from '@fastify/cors';
 //const Fastify = require('fastify');
 //const cors = require('@fastify/cors');
 import { assembleAnswerWithLLm } from './assembleAnswerWithLLm.js';
+import fetch from 'node-fetch';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -211,6 +212,50 @@ fastify.post('/outbound-call', async (request, reply) => {
   }
 });
 
+let fileId = '1QTiy_kKrPmwlkhaAkefa6xkINYdImugR';
+let dest = './GACFile'; // Ensure this is a valid path, like './GACFile'
+//https://drive.google.com/file/d/1QTiy_kKrPmwlkhaAkefa6xkINYdImugR/view?usp=sharing
+
+async function downloadFileFromGoogleDrive(fileId, dest) {
+    try {
+        // Google Drive direct download URL
+        const fileUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+        console.log(`Requesting download from: ${fileUrl}`);
+
+        const response = await fetch(fileUrl);
+
+        if (!response.ok) {
+            throw new Error(`Failed to download file: ${response.statusText}`);
+        }
+
+        console.log(`Download successful, saving to: ${dest}`);
+
+        // Save the file to the destination path
+        const writer = fs.createWriteStream(dest);
+
+        // Ensure the pipe is correctly set up
+        response.body.pipe(writer);
+
+        return new Promise((resolve, reject) => {
+            writer.on('finish', () => {
+                console.log('File download and save complete.');
+                resolve();
+            });
+            writer.on('error', (err) => {
+                console.error('Error saving file:', err);
+                reject(err);
+            });
+        });
+    } catch (error) {
+        console.error('Error during download:', error);
+    }
+}
+
+
+
+
+
 const getTranscript = async (recordingUrl) => {
     const transcription = await twilioClient.transcriptions.create({
       recordingSid: recordingUrl.split('/').pop(), // Extract the recording SID from the URL
@@ -267,6 +312,8 @@ async function transcribeAudio(audioBuffer) {
         // Decode the WAV file using wav-decoder
         const wav = await wavDecoder.decode(audioData);
         const sampleRate = wav.sampleRate; // Get the sample rate from the decoded file
+
+        await downloadFileFromGoogleDrive(fileId, dest);
 
         // Initialize Google Cloud Speech-to-Text client
         const client = new SpeechClient();
