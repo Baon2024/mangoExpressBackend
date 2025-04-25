@@ -90,7 +90,7 @@ fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, bo
   }
 });
 
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 8002;
 
 // Root route for health check
 fastify.get('/', async (_, reply) => {
@@ -763,14 +763,14 @@ fastify.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
     console.log(`[Server] Listening on port ${PORT}`);
   });
 
-  (async function() {
+  /*(async function() {
     const url = await ngrok.connect({
       proto: 'http',  // or 'tcp' if needed
       addr: PORT, // Match your Fastify server's port
       region: 'us' // Change based on your location if needed
     });
     console.log(`Ngrok tunnel established at: ${url}`);
-  })();
+  })();*/
 
  //next steops, once twilio number works and can test call itself
  //is to add in endpoint for webhook, to get transcript on completion, and and then use stored numberOfQuestions and questions
