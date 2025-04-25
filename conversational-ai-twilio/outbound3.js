@@ -139,6 +139,10 @@ fastify.post('/outbound-call', async (request, reply) => {
   //const questionNumber = 4
   const questions = ["How much does a new Ferrari cost?", "What colour ferrari would you like?"]
 
+  const completePrompt = `You are a concise, procurement agent. When you have collected the answers to the questions you need to ask, proactively end the call in a polite manner.
+  Here's extra instruction:  ${prompt}
+  `
+
   //i need to store number/realNumber, questionNumber and questions in a global state
     
    const trialPrompt = `You are a agent calling a number to ask questions the user has given you. You need to ask the person who answers ${questionNumber} questions. The questions are: ${questions} `;
@@ -147,7 +151,7 @@ fastify.post('/outbound-call', async (request, reply) => {
    stuffFromFrontendFunctionNeedToStore.number = number;
    stuffFromFrontendFunctionNeedToStore.questionNumber = questionNumber;
    stuffFromFrontendFunctionNeedToStore.questions = questions;
-   stuffFromFrontendFunctionNeedToStore.correctPrompt = prompt;
+   stuffFromFrontendFunctionNeedToStore.correctPrompt = completePrompt;
    
   
 
@@ -164,7 +168,7 @@ fastify.post('/outbound-call', async (request, reply) => {
       from: TWILIO_PHONE_NUMBER,
       to: number /*realNumber*/, //for testing
       url: `https://${request.headers.host}/outbound-call-twiml?prompt=${encodeURIComponent(
-        prompt
+        completePrompt
       )}&first_message=${encodeURIComponent(first_message)}`,
       
       record: true,  // Enables recording
