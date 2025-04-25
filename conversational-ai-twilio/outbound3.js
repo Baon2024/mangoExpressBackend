@@ -65,10 +65,7 @@ if (
 
 
 
-// Initialize Fastify server
-//const fastify = Fastify();
-//fastify.register(fastifyFormBody);
-//fastify.register(fastifyWs);
+
 
 const fastify = Fastify({ logger: true });
 fastify.register(fastifyFormBody);
