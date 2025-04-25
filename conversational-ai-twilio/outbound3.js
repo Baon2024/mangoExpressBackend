@@ -314,6 +314,7 @@ async function transcribeAudio(audioBuffer) {
         const sampleRate = wav.sampleRate; // Get the sample rate from the decoded file
 
         await downloadFileFromGoogleDrive(fileId, dest);
+        console.log("downloaded GAC now")
 
         // Initialize Google Cloud Speech-to-Text client
         const client = new SpeechClient();
