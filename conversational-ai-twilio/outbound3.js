@@ -73,10 +73,14 @@ fastify.register(fastifyWs);
 
 // ✅ Register CORS plugin
 fastify.register(cors, {
-  origin: ['http://localhost:3004', 'https://cc7f-131-111-185-176.ngrok-free.app', 'https://mango-frontend-liard.vercel.app/'], // Allowed origins
-  methods: ['GET', 'POST'], // Allowed HTTP methods
+  origin: ['http://localhost:3004', 'https://cc7f-131-111-185-176.ngrok-free.app', 'https://mango-frontend-liard.vercel.app'], // Allowed origins
+  methods: ['GET', 'POST', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Accept', 'X-Requested-With', 'redirect', 'Cache-Control', 'Pragma'] // Allowed headers
 });
+
+fastify.options('*', (request, reply) => {
+    reply.code(204).send();
+  });
 
 // ✅ Parse JSON requests
 fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
