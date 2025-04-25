@@ -78,9 +78,7 @@ fastify.register(cors, {
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Accept', 'X-Requested-With', 'redirect', 'Cache-Control', 'Pragma'] // Allowed headers
 });
 
-fastify.options('*', (request, reply) => {
-    reply.code(204).send();
-  });
+
 
 // ✅ Parse JSON requests
 fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
