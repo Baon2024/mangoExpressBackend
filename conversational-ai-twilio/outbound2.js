@@ -125,6 +125,12 @@ async function getSignedUrl() {
   }
 }
 
+fastify.post('/call-status', async (req, reply) => {
+  console.log('Call status webhook received:', req.body);
+  reply.send();
+});
+
+
 // Route to initiate outbound calls
 fastify.post('/outbound-call', async (request, reply) => {
   const { number, prompt, first_message, questionNumber } = request.body;

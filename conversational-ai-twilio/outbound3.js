@@ -805,6 +805,12 @@ fastify.register(async (fastifyInstance) => {
   });
 });
 
+fastify.post('/call-status', async (req, reply) => {
+    console.log('Call status webhook received:', req.body);
+    reply.send();
+  });
+  
+
 //start Fastify server
 fastify.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
     if (err) {

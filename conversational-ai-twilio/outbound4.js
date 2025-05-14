@@ -125,6 +125,12 @@ async function getSignedUrl() {
   }
 }
 
+fastify.post('/call-status', async (req, reply) => {
+    console.log('Call status webhook received:', req.body);
+    reply.send();
+  });
+  
+
 // Route to initiate outbound calls
 fastify.post('/outbound-call', async (request, reply) => {
   const { number, prompt, first_message, questionNumber } = request.body;
@@ -195,6 +201,7 @@ fastify.post('/outbound-call', async (request, reply) => {
 
   callsInProgress[call.sid] = { reply }; //will need to delay reply until webhook endpoint, so block out reply below
     stuffFromFrontendFunctionNeedToStore[call.sid] = { number };
+    console.log("stuffFromFrontendFunctionNeedToStore after adding number and call.side key-pair is:", stuffFromFrontendFunctionNeedToStore);
 
     console.log("callsInProgress is:", callsInProgress, "and call.sid is:", call.sid);
 
@@ -427,6 +434,7 @@ async function transcribeAudio(audioBuffer) {
     console.log("callsInProgress[CallSid] before checking reply:", callsInProgress[CallSid]);
 
     let number = stuffFromFrontendFunctionNeedToStore[CallSid].number
+    delete stuffFromFrontendFunctionNeedToStore[CallSid].number //this should ensure its no longer around to interfere??
 
 
     if (RecordingUrl) {
@@ -493,7 +501,7 @@ ${correctPrompt}
             ]
 
             //okay, so just need to get this to work
-            stuffFromFrontendFunctionNeedToStore.messages = messages;
+            stuffFromFrontendFunctionNeedToStore[number].messages = messages;
             
             console.log("transcript length is:", transcript.length);
 
@@ -516,11 +524,13 @@ ${correctPrompt}
 
             //need to add response to globalState
             stuffFromFrontendFunctionNeedToStore[number].response = parsedResponse;   
-            console.log("stuffFromFrontendFunctionNeededToStore[number].response is here:", stuffFromFrontendFunctionNeedToStore);
+            console.log("stuffFromFrontendFunctionNeededToStore[number] is here:", stuffFromFrontendFunctionNeedToStore[number]);
+            console.log("stuffFromFrontendFunctionNeededToStore[number].response is here:", stuffFromFrontendFunctionNeedToStore[number].response);
             
             
               //delete callsInProgress[CallSid];
             delete stuffFromFrontendFunctionNeedToStore[questionNumber, questions];
+            delete stuffFromFrontendFunctionNeedToStore[number].messages //no need to keep this around, when answer's been got
             
             
            
@@ -576,6 +586,7 @@ fastify.get(`/retrieve-response/:number`, async (request, reply) => {
     if (request.method === 'OPTIONS') {
         return reply.code(204).send(); // Send a 204 No Content response
     }
+    console.log("retrieve endpoint hit by fetch api request to get info for: ", number);
 
     //now need to change from .get to .post, in order to send number with api call, and use that to access response: [number].response
     //delete the global data attached to the number, then return response
@@ -608,8 +619,9 @@ fastify.get(`/retrieve-response/:number`, async (request, reply) => {
     delete stuffFromFrontendFunctionNeedToStore[number].questionNumber;
     //delete stuffFromFrontendFunctionNeedToStore.messages;
     delete stuffFromFrontendFunctionNeedToStore[number].correctPrompt;
+    delete stuffFromFrontendFunctionNeedToStore[number];
 
-    console.log("stuffFromFrontendNeededToStore is now:", stuffFromFrontendFunctionNeedToStore);
+    console.log("stuffFromFrontendNeededToStore after deletion is now:", stuffFromFrontendFunctionNeedToStore);
 
     reply.code(201).send(correctResponse);
 
