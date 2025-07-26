@@ -63,13 +63,7 @@ if (
   throw new Error('Missing required environment variables');
 }
 
-
-
-
-
 const fastify = Fastify({ logger: true });
-fastify.register(fastifyFormBody);
-fastify.register(fastifyWs);
 
 // ✅ Register CORS plugin
 fastify.register(cors, {
@@ -77,6 +71,13 @@ fastify.register(cors, {
   methods: ['GET', 'POST', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Accept', 'X-Requested-With', 'redirect', 'Cache-Control', 'Pragma'] // Allowed headers
 });
+
+
+
+
+fastify.register(fastifyFormBody);
+fastify.register(fastifyWs);
+
 
 
 
@@ -146,8 +147,7 @@ fastify.post('/outbound-call', async (request, reply) => {
   const questions = ["How much does a new Ferrari cost?", "What colour ferrari would you like?"]
 
   const completePrompt = `You are a concise, procurement agent. When you have collected the answers to the questions you need to ask, proactively end the call in a polite manner.
-  Here's extra instruction:  ${prompt}
-  `
+  Here's extra instruction:  ${prompt}`
 
   //i need to store number/realNumber, questionNumber and questions in a global state
     
