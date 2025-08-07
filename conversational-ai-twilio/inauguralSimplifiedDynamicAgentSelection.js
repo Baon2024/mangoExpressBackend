@@ -934,22 +934,28 @@ fastify.register(async (fastifyInstance) => {
 });
 
 //start Fastify server
-fastify.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
-    if (err) {
-      console.error('Error starting server:', err);
-      process.exit(1);
-    }
-    console.log(`[Server] Listening on port ${PORT}`);
-  });
+fastify.listen({ port: PORT, host: '0.0.0.0' }, async (err) => {
+  if (err) {
+    console.error('Error starting server:', err);
+    process.exit(1);
+  }
+  console.log(`[Server] Listening on port ${PORT}`);
 
-  (async function() {
-    const url = await ngrok.connect({
-      proto: 'http',  // or 'tcp' if needed
-      addr: PORT, // Match your Fastify server's port
-      region: 'us' // Change based on your location if needed
-    });
-    console.log(`Ngrok tunnel established at: ${url}`);
-  })();
+  // Ngrok tunnel only for local development
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const ngrok = await import('ngrok');
+      const url = await ngrok.default.connect({
+        proto: 'http',
+        addr: PORT,
+        region: 'us',
+      });
+      console.log(`🚇 Ngrok tunnel established at: ${url}`);
+    } catch (err) {
+      console.error('Failed to start ngrok:', err.message);
+    }
+  }
+});
 
  /*
   
