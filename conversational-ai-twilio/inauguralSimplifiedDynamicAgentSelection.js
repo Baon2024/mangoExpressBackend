@@ -68,7 +68,7 @@ const fastify = Fastify({ logger: true });
 
 // ✅ Register CORS plugin
 fastify.register(cors, {
-  origin: ['http://localhost:3004', 'https://cc7f-131-111-185-176.ngrok-free.app','http://localhost:8080'], // Allowed origins
+  origin: ['http://localhost:3004', 'https://vercel.com/joejoe-7851s-projects/yatakalam-frontend','http://localhost:8080'], // Allowed origins
   methods: ['GET', 'POST', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Accept', 'X-Requested-With', 'redirect', 'Cache-Control', 'Pragma'] // Allowed headers
 });
@@ -934,28 +934,27 @@ fastify.register(async (fastifyInstance) => {
 });
 
 //start Fastify server
-fastify.listen({ port: PORT, host: '0.0.0.0' }, async (err) => {
-  if (err) {
-    console.error('Error starting server:', err);
-    process.exit(1);
-  }
-  console.log(`[Server] Listening on port ${PORT}`);
+async function startServer() {
+  try {
+    await fastify.listen({ port: PORT, host: '0.0.0.0' });
+    console.log(`[Server] Listening on port ${PORT}`);
 
-  // Ngrok tunnel only for local development
-  if (process.env.NODE_ENV !== 'production') {
-    try {
-      const ngrok = await import('ngrok');
-      const url = await ngrok.default.connect({
+    // Only run ngrok in development
+    if (process.env.NODE_ENV !== 'production') {
+      const url = await ngrok.connect({
         proto: 'http',
         addr: PORT,
         region: 'us',
       });
       console.log(`🚇 Ngrok tunnel established at: ${url}`);
-    } catch (err) {
-      console.error('Failed to start ngrok:', err.message);
     }
+  } catch (err) {
+    console.error('Error starting server:', err);
+    process.exit(1);
   }
-});
+}
+
+startServer();
 
  /*
   
