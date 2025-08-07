@@ -68,7 +68,7 @@ const fastify = Fastify({ logger: true });
 
 // ✅ Register CORS plugin
 fastify.register(cors, {
-  origin: ['http://localhost:3004', 'https://vercel.com/joejoe-7851s-projects/yatakalam-frontend','http://localhost:8080'], // Allowed origins
+  origin: ['http://localhost:3004', 'https://yatakalam-frontend.vercel.app','http://localhost:8080'], // Allowed origins
   methods: ['GET', 'POST', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Accept', 'X-Requested-With', 'redirect', 'Cache-Control', 'Pragma'] // Allowed headers
 });
