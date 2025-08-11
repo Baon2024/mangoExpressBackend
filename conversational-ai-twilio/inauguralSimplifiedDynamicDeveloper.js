@@ -25,6 +25,8 @@ import getWarmth from './warmthRatingFunction.js';
 // Load environment variables from .env file
 dotenv.config();
 
+getWarmth("prewarm").catch((e) => console.error("[prewarm]", e));
+
 const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY, // Securely load API key
 });

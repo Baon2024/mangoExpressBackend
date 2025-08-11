@@ -9,7 +9,17 @@ peak in English or Arabic? English, please. Great. What's your name? Joseph. Tha
 . Which area of Dubai do you prefer? Central Dubai. Thank you, Joseph. Where do you currently live? London. What is your address in London? Gosw
 ell Road. Thank you, Joseph. How old are you? 24. And when are you looking to move? December. Thank you, Joseph. Have a great day.`
 
-
+let zscPromise = null;
+function getZSC() {
+  if (!zscPromise) {
+    zscPromise = pipeline(
+      "zero-shot-classification",
+      "Xenova/distilbert-base-uncased-mnli",
+      { quantized: true }
+    );
+  }
+  return zscPromise;
+}
 
 
 export default async function getWarmth(callTranscript) {
@@ -18,9 +28,10 @@ export default async function getWarmth(callTranscript) {
     
     let context = `you need to decide on the degree of the customers interest in buying dubai property, based on this call transcript, ${callTranscript}`
 
+    const clf = await getZSC();
 // Allocate a pipeline for sentiment-analysis
-const pipe = await pipeline('zero-shot-classification');
-const out = await pipe(context, ["Warm", "Medium", "Cool"]
+//const pipe = await pipeline('zero-shot-classification');
+const out = await clf(context, ["Warm", "Medium", "Cool"]
     );
 
 //const out = await pipe(callTranscript);
@@ -42,4 +53,4 @@ const labels = out.labels;  // The model's predicted labels
 
 }
 
-//getWarmth(transcript)
+getWarmth(transcript)
