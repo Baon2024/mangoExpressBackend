@@ -74,4 +74,4 @@ Return only one of the following labels: Warm, Medium, Cool.`;
     }
 }
 
-getWarmth(transcript)
+//getWarmth(transcript)
