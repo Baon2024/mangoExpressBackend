@@ -25,7 +25,7 @@ import getWarmth from './warmthRatingFunction.js';
 // Load environment variables from .env file
 dotenv.config();
 
-getWarmth("prewarm").catch((e) => console.error("[prewarm]", e));
+//getWarmth("prewarm").catch((e) => console.error("[prewarm]", e));
 
 const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY, // Securely load API key
@@ -187,23 +187,15 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   let randomNumber = Math.round(Math.random());
 
 
-  if ( countryCode === "UAE") {
-    agentID = "agent_1301k1r16hj3ew78sh3hds1s4y8x" //if country code is UAE, agent with be arabic one
-  } else {
+  
     agentID =  "agent_8901k1p8n0hyf6s8nm6sh324c3zc"
-  }
+  
   //need to replace random selection of agent, with selection based on phone number country code.
 
   console.log("agent id chosen is: ", agentID);
 
-  const universalQuestions = [
-      "What’s your name?",
-      "What is your budget?",
-      "Which area of Dubai do you prefer?",
-      "When are you looking to move?"
-    ];
-  
-   const allQuestions = [...universalQuestions, ...customQuestions];
+ 
+   const allQuestions = [...customQuestions];
   
   let questionNumber = allQuestions.length
   console.log("questionNumber after adding universal and customQuestions is: ", questionNumber);
@@ -248,8 +240,7 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   //const questions = ["How much does a new Ferrari cost?", "What colour ferrari would you like?"]
 
   const completePrompt = `You are a concise, procurement agent. When you have collected the answers to the questions you need to ask, proactively end the call in a polite manner.
-  There are three universal questions that you must ask: ${JSON.stringify(universalQuestions)}
-  Here's extra instruction, with additional custom questions that the developer wants you to ask:  ${prompt}`
+  There are custom questions that the developer wants you to ask:  ${prompt}`
 
   //add in standard questions that will always be asked, as need that for predefined supabase data columns
  
@@ -568,13 +559,7 @@ async function transcribeAudio(audioBuffer) {
     let number = stuffFromFrontendFunctionNeedToStore[CallSid].number
     delete stuffFromFrontendFunctionNeedToStore[CallSid].number //this should ensure its no longer around to interfere??
 
-    const universals = [
-  { key: "name",   question: "What is your name?" },
-  { key: "budget", question: "What is your budget?" },
-  { key: "area",   question: "Which area are you looking in?" },
-  { key: "when",   question: "When are you looking to move?" }
-
-];
+   
 
 
 
@@ -639,12 +624,10 @@ Transcript:
 const prompt3 = `
 You are an extraction assistant.
 
-Return ONLY a valid JSON array (no code fences, no prose, no extra characters) of exactly ${universals.length + customQuestionsOriginal.length} objects.
+Return ONLY a valid JSON array (no code fences, no prose, no extra characters) of exactly ${customQuestionsOriginal.length} objects.
 Each object must have exactly **one key** and its string value.
 
-Key rules:
-- For these universal items, USE THESE EXACT KEYS (not the question text), in this order:
-${JSON.stringify(universals.map(u => u.key), null, 2)}
+
 
 - For these custom items, use the **exact question text** as the key, in this order:
 ${JSON.stringify(customQuestionsOriginal, null, 2)}
