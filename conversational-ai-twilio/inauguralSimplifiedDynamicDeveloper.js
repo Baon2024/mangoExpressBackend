@@ -216,8 +216,9 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
 } else {
   // ✅ English version
   //questions = ["What’s your name?", "What is your budget?", "Which area of Dubai do you prefer?"];
-  prompt = `You are a professional real estate agent from Luxury Dubai, a leading UAE-based real estate firm. Your job is to collect answers to the following questions in a polite and direct way, then proactively end the call politely once all answers are obtained: ${allQuestions.join(", ")}`;
-  first_message = "Hello, I'm a Dubai property agent calling because you expressed interest in new-build Dubai property. Would you prefer to speak in English or Arabic?";
+  prompt = `The interview questions are aimed at understanding an individual's personality across 5 key personality traits. Each question is attached to a type of personality trait. 
+The user is you are ringing is called Jason Kramer. The Founder of Vital Findings. Your job is to collect answers to the following questions in a polite and direct way, then proactively end the call politely once all answers are obtained: ${allQuestions.join(", ")}`;
+  first_message = "Hello, I'm interviewer focused on undertsanding  an individual's personality across 5 key personality traits. May I ask you some questions ";
   //questionNumber = questions.length.toString();
 }
 
