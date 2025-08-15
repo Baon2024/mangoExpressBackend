@@ -138,8 +138,10 @@ fastify.post('/call-status', async (req, reply) => {
 
 // Route to initiate outbound calls
 fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => {
-  const { number } = request.body;
+  const { number, universalQuestionsOn } = request.body;
   console.log("number is: ", number);
+  console.log("universalQuestionsOn is: ", universalQuestionsOn);
+  //{ universalQuestions } = request.body
 
   const uniqueDeveloperNumber = request.params.uniqueDeveloperNumber;
   console.log("uniqueDeveloperNumber is: ", uniqueDeveloperNumber);
@@ -187,15 +189,30 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   let randomNumber = Math.round(Math.random());
 
 
-  
+  if ( countryCode === "UAE") {
+    agentID = "agent_1301k1r16hj3ew78sh3hds1s4y8x" //if country code is UAE, agent with be arabic one
+  } else {
     agentID =  "agent_8901k1p8n0hyf6s8nm6sh324c3zc"
-  
+  }
   //need to replace random selection of agent, with selection based on phone number country code.
 
   console.log("agent id chosen is: ", agentID);
 
- 
-   const allQuestions = [...customQuestions];
+  const universalQuestions = [
+      "What’s your name?",
+      "What is your budget?",
+      "Which area of Dubai do you prefer?",
+      "When are you looking to move?"
+    ];
+  
+  let allQuestions
+  
+  if (universalQuestionsOn) {
+  
+  allQuestions = [...universalQuestions, ...customQuestions];
+  } else {
+    allQuestions = [...customQuestions]
+  }
   
   let questionNumber = allQuestions.length
   console.log("questionNumber after adding universal and customQuestions is: ", questionNumber);
@@ -216,9 +233,8 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
 } else {
   // ✅ English version
   //questions = ["What’s your name?", "What is your budget?", "Which area of Dubai do you prefer?"];
-  prompt = `The interview questions are aimed at understanding an individual's personality across 5 key personality traits. Each question is attached to a type of personality trait. 
-The user is you are ringing is called Jason Kramer. The Founder of Vital Findings. Your job is to collect answers to the following questions in a polite and direct way, then proactively end the call politely once all answers are obtained: ${allQuestions.join(", ")}`;
-  first_message = "Hello, I'm an interviewer focused on undertsanding an individual's personality across 5 key personality traits. May I ask you some questions ";
+  prompt = `You are a professional real estate agent from Luxury Dubai, a leading UAE-based real estate firm. Your job is to collect answers to the following questions in a polite and direct way, then proactively end the call politely once all answers are obtained: ${allQuestions.join(", ")}`;
+  first_message = "Hello, I'm a Dubai property agent calling because you expressed interest in new-build Dubai property. Would you prefer to speak in English or Arabic?";
   //questionNumber = questions.length.toString();
 }
 
@@ -241,8 +257,11 @@ The user is you are ringing is called Jason Kramer. The Founder of Vital Finding
   //const questions = ["How much does a new Ferrari cost?", "What colour ferrari would you like?"]
 
   const completePrompt = `You are a concise, procurement agent. When you have collected the answers to the questions you need to ask, proactively end the call in a polite manner.
-  There are custom questions that the developer wants you to ask:  ${prompt}`
+ 
+  Here's extra instruction, with additional custom questions that the developer wants you to ask:  ${prompt}`
 
+
+  //There are three universal questions that you must ask: ${JSON.stringify(universalQuestions)}
   //add in standard questions that will always be asked, as need that for predefined supabase data columns
  
 
@@ -260,7 +279,8 @@ The user is you are ringing is called Jason Kramer. The Founder of Vital Finding
     questions: allQuestions,
     correctPrompt: completePrompt,
     developerUUID,
-    customQuestions
+    customQuestions,
+    universalQuestionsOn
 };
 
    
@@ -560,7 +580,13 @@ async function transcribeAudio(audioBuffer) {
     let number = stuffFromFrontendFunctionNeedToStore[CallSid].number
     delete stuffFromFrontendFunctionNeedToStore[CallSid].number //this should ensure its no longer around to interfere??
 
-   
+    const universals = [
+  { key: "name",   question: "What is your name?" },
+  { key: "budget", question: "What is your budget?" },
+  { key: "area",   question: "Which area are you looking in?" },
+  { key: "when",   question: "When are you looking to move?" }
+
+];
 
 
 
@@ -579,6 +605,7 @@ async function transcribeAudio(audioBuffer) {
             const questions = stuffFromFrontendFunctionNeedToStore[number].questions;
             const correctPrompt = stuffFromFrontendFunctionNeedToStore[number].correctPrompt;
             const customQuestionsOriginal = stuffFromFrontendFunctionNeedToStore[number].customQuestions;
+            const universalQuestionsOn = stuffFromFrontendFunctionNeedToStore[number].universalQuestionsOn
 
             console.log("value of quetsionNumber, questions and correctPrompt retrieved with number are:", questionNumber, questions, correctPrompt);
             console.log("value of customQuestiosn in webhook endoint is ",customQuestionsOriginal)
@@ -625,10 +652,14 @@ Transcript:
 const prompt3 = `
 You are an extraction assistant.
 
-Return ONLY a valid JSON array (no code fences, no prose, no extra characters) of exactly ${customQuestionsOriginal.length} objects.
+Return ONLY a valid JSON array (no code fences, no prose, no extra characters) of exactly ${questions.length} objects.
 Each object must have exactly **one key** and its string value.
 
-
+Key rules:
+${universalQuestionsOn && universals?.length
+  ? `- For these universal items, USE THESE EXACT KEYS (not the question text), in this order:
+${JSON.stringify(universals.map(u => u.key), null, 2)}`
+  : ``}
 
 - For these custom items, use the **exact question text** as the key, in this order:
 ${JSON.stringify(customQuestionsOriginal, null, 2)}
