@@ -138,10 +138,10 @@ fastify.post('/call-status', async (req, reply) => {
 
 // Route to initiate outbound calls
 fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => {
-  const { number, universalQuestionsOn } = request.body;
+  const { number } = request.body;
   console.log("number is: ", number);
-  console.log("universalQuestionsOn is: ", universalQuestionsOn);
-  //{ universalQuestions } = request.body
+  
+
 
   const uniqueDeveloperNumber = request.params.uniqueDeveloperNumber;
   console.log("uniqueDeveloperNumber is: ", uniqueDeveloperNumber);
@@ -165,15 +165,57 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   console.log("value of questions after retrieving developer's questions: ", questions);
   let customQuestions = questions;
 
+  //now use UDN to retrieve developer's knowledgeBase
+  let knowledgeBase
+
+  let { data: developerKnowledgeBase, error2 } = await supabaseReal
+  .from('user-details')
+  .select('knowledge_base')
+  .eq("unique_developer_number", uniqueDeveloperNumber)
+
+  if (error2) {
+    console.log("error returned from attempt to get developer questions: ", error);
+    return;
+  } else if (developerKnowledgeBase) {
+    console.log("data returned from attempt to get developer questions: ", developerKnowledgeBase);
+    knowledgeBase = developerKnowledgeBase[0].knowledge_base
+  }
+
+  console.log("value of knowledgeBase after retrieving developer's knowledgeBase: ", knowledgeBase);
+  const knowledgeBaseExists = knowledgeBase.length > 0;
+  console.log("knowledgeBaseExists is ", knowledgeBaseExists)
+  
+  //now use UDN to retrieve developer's firstMessage
+  let firstMessage
+
+  let { data: developerFirstMessage, error4 } = await supabaseReal
+  .from('user-details')
+  .select('first_message')
+  .eq("unique_developer_number", uniqueDeveloperNumber)
+
+  if (error4) {
+    console.log("error returned from attempt to get developer first message: ", error);
+    return;
+  } else if (developerFirstMessage) {
+    console.log("data returned from attempt to get developer questions: ", developerFirstMessage);
+    firstMessage = developerFirstMessage[0].first_message
+  }
+
+  console.log("value of firstMessage after retrieving developer's knowledgeBase: ", firstMessage);
+  const firstMessageExists = firstMessage.length > 0;
+  console.log("firstMessageExists is ", firstMessageExists)
+
+
+
   //now use UDN to retrieve developer's UUID, and store for use in the webhook
-  let { data: linked_user, error2 } = await supabaseReal
+  let { data: linked_user, error3 } = await supabaseReal
   .from('user-details')
   .select('linked_user')
   .eq("unique_developer_number", uniqueDeveloperNumber)
 
   let developerUUID
 
-  if (error2) {
+  if (error3) {
     console.log("there was an error trying to retrieve developer's UUID")
   } else if (linked_user) {
     console.log("UUID returned using developer's UDN is: ", linked_user);
@@ -200,31 +242,28 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
 
   const universalQuestions = [
       "What’s your name?",
-      "What is your budget?",
-      "Which area of Dubai do you prefer?",
-      "When are you looking to move?"
+      //"What is your budget?",
+      //"Which area of Dubai do you prefer?",
+      //"When are you looking to move?"
     ];
   
   let allQuestions
   
-  if (universalQuestionsOn) {
+  
   
   allQuestions = [...universalQuestions, ...customQuestions];
-  } else {
-    allQuestions = [...customQuestions]
-  }
+  allQuestions = [...universalQuestions, ...customQuestions];
   
   let questionNumber = allQuestions.length
   console.log("questionNumber after adding universal and customQuestions is: ", questionNumber);
 
 
   //can allow developer to send their own info for agent, by saving in database liek with questions, and then adding here in prompt to send.
-  
-  let prompt
   let first_message
+  let prompt
   console.log("questionNumber intiialsied with length of custom questions is: ", questionNumber)
 
- if (agentID === "agent_1301k1r16hj3ew78sh3hds1s4y8x") {
+ /*if (agentID === "agent_1301k1r16hj3ew78sh3hds1s4y8x") {
   // ✅ Arabic version
   questions = ["ما اسمك؟", "ما ميزانيتك؟", "ما المنطقة التي تفضلها في دبي؟"];
   prompt = `أنت وكيل عقاري محترف من شركة Luxury Dubai، وهي شركة رائدة في مجال العقارات في دولة الإمارات. مهمتك هي جمع إجابات على الأسئلة التالية بشكل مهذب ومباشر، ثم إنهاء المكالمة بأدب بعد الحصول على كل الإجابات المطلوبة: ${allQuestions.join("، ")}`;
@@ -232,12 +271,29 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   //questionNumber = questions.length.toString();
 } else {
   // ✅ English version
-  //questions = ["What’s your name?", "What is your budget?", "Which area of Dubai do you prefer?"];
-  prompt = `You are a professional real estate agent from Luxury Dubai, a leading UAE-based real estate firm. Your job is to collect answers to the following questions in a polite and direct way, then proactively end the call politely once all answers are obtained: ${allQuestions.join(", ")}`;
+  if (knowledgeBaseExists) {
+    prompt = knowledgeBase
+    //make firstmessage dynamic too, and just add "would you like to seak in english or arabic" at the end automatically
+    first_message = "Hello, I'm a Dubai property agent calling because you expressed interest in new-build Dubai property. Would you prefer to speak in English or Arabic?";
+    } else {
+  prompt = `You are a professional real estate agent.`;
   first_message = "Hello, I'm a Dubai property agent calling because you expressed interest in new-build Dubai property. Would you prefer to speak in English or Arabic?";
   //questionNumber = questions.length.toString();
+  } 
+}*/
+
+if (knowledgeBaseExists && firstMessageExists) {
+  prompt = knowledgeBase
+  first_message = firstMessage
+} else if (knowledgeBaseExists && !firstMessageExists) {
+  prompt = knowledgeBase
+  first_message = "Hello, I'm a Dubai property agent calling because you expressed interest in new-build Dubai property. Would you prefer to speak in English or Arabic?";
+} else if (!knowledgeBaseExists && firstMessageExists) {
+  prompt = `You are a professional real estate agent.`;
+  first_message = firstMessage
 }
 
+//move the arabic stuff to be after, or remove it, but take whatever dynamic fields are, and use ai to translate to arabic
 
   //this can all be made dynamic, based on uniqueDeveloperCode passed as a parameter: '/:uniqueDeveloperCode/outbound-call'
   //then extract that with req.params.uniqueDeveloperCode (i presume still works like that in fastify?), and retrieve correct developer from database
@@ -256,9 +312,11 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   //const questionNumber = 4
   //const questions = ["How much does a new Ferrari cost?", "What colour ferrari would you like?"]
 
-  const completePrompt = `You are a concise, procurement agent. When you have collected the answers to the questions you need to ask, proactively end the call in a polite manner.
+  const completePrompt = `Your job is to collect answers to the following questions in a polite and direct way, then proactively end the call politely once all answers are obtained: ${allQuestions.join(", ")}
  
-  Here's extra instruction, with additional custom questions that the developer wants you to ask:  ${prompt}`
+  Here's is additional styling on your personality:  ${prompt}`
+
+  console.log("completePrompt is ", completePrompt)
 
 
   //There are three universal questions that you must ask: ${JSON.stringify(universalQuestions)}
@@ -280,7 +338,6 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
     correctPrompt: completePrompt,
     developerUUID,
     customQuestions,
-    universalQuestionsOn
 };
 
    
@@ -582,9 +639,9 @@ async function transcribeAudio(audioBuffer) {
 
     const universals = [
   { key: "name",   question: "What is your name?" },
-  { key: "budget", question: "What is your budget?" },
-  { key: "area",   question: "Which area are you looking in?" },
-  { key: "when",   question: "When are you looking to move?" }
+  //{ key: "budget", question: "What is your budget?" },
+  //{ key: "area",   question: "Which area are you looking in?" },
+  //{ key: "when",   question: "When are you looking to move?" }
 
 ];
 
@@ -605,7 +662,7 @@ async function transcribeAudio(audioBuffer) {
             const questions = stuffFromFrontendFunctionNeedToStore[number].questions;
             const correctPrompt = stuffFromFrontendFunctionNeedToStore[number].correctPrompt;
             const customQuestionsOriginal = stuffFromFrontendFunctionNeedToStore[number].customQuestions;
-            const universalQuestionsOn = stuffFromFrontendFunctionNeedToStore[number].universalQuestionsOn
+            
 
             console.log("value of quetsionNumber, questions and correctPrompt retrieved with number are:", questionNumber, questions, correctPrompt);
             console.log("value of customQuestiosn in webhook endoint is ",customQuestionsOriginal)
@@ -656,7 +713,7 @@ Return ONLY a valid JSON array (no code fences, no prose, no extra characters) o
 Each object must have exactly **one key** and its string value.
 
 Key rules:
-${universalQuestionsOn && universals?.length
+${universals?.length
   ? `- For these universal items, USE THESE EXACT KEYS (not the question text), in this order:
 ${JSON.stringify(universals.map(u => u.key), null, 2)}`
   : ``}
@@ -703,17 +760,19 @@ const messages = [
   { budget: 'two hundred thousand dollars' },
   { area: 'Central Dubai' }
 ] */        const name = parsedResponse.find(obj => obj.name)?.name;
-const budget = parsedResponse.find(obj => obj.budget)?.budget;
-const area = parsedResponse.find(obj => obj.area)?.area;
+//const budget = parsedResponse.find(obj => obj.budget)?.budget;
+//const area = parsedResponse.find(obj => obj.area)?.area;
+//const when = parsedResponse.find(obj => obj.when)?.when;
 
 console.log("Name:", name);
-console.log("Budget:", budget);
-console.log("Area:", area);
+//console.log("Budget:", budget);
+//console.log("Area:", area);
+//console.log("When:", when);
 
-const parsedBudget = parseFloat(
-  (budget || '').replace(/[^0-9.]/g, '')
-);          
-const universalQuestions = ['name', 'budget', 'area'];
+//const parsedBudget = parseFloat(
+  //(budget || '').replace(/[^0-9.]/g, '')
+//);          
+const universalQuestions = ['name', 'budget', 'area', 'when'];
 
 // Extract custom questions
 const customQuestions = parsedResponse.filter(item => {
@@ -743,10 +802,15 @@ console.log("Custom Questions:", customQuestions);
             const leadWarmthRating = await getWarmth(transcript)
             console.log("leadWarmRating returned in main scrit is ", leadWarmthRating)
 
+            let budget = 8
+            let area = "e"
+            let when = "w"
+            //just temorary, for chris call, then turn back
+
             const { data, error } = await supabaseReal
   .from('Call Lead Details')
   .insert([
-    { linked_user: developerUUID, phoneNumber: stringNumber, name: name, budget: parsedBudget, area: area, custom_questions: customQuestions, lead_warmth_rating: leadWarmthRating },
+    { linked_user: developerUUID, phoneNumber: stringNumber, name: name, budget: budget, area: area, when: when, custom_questions: customQuestions, lead_warmth_rating: leadWarmthRating },
   ])
   .select()
 
