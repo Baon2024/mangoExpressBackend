@@ -141,12 +141,19 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   const { number } = request.body;
   console.log("number is: ", number);
   
+  if (!number) {
+    return reply.code(400).send({ error: 'Phone number is required' });
+  }
 
 
   const uniqueDeveloperNumber = request.params.uniqueDeveloperNumber;
   console.log("uniqueDeveloperNumber is: ", uniqueDeveloperNumber);
 
-  let questions 
+  if (!uniqueDeveloperNumber) {
+    return reply.code(400).send({ error: 'uniqueDeveloperNumber param is required' });
+  }
+
+  let questions = []
 
   //use uniqueDeveloperNumber to retrieve correct developer questions from supabase database, and their id to use later to save
   let { data: developerQuestions, error } = await supabaseReal
@@ -160,13 +167,16 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   } else if (developerQuestions) {
     console.log("data returned from attempt to get developer questions: ", developerQuestions);
     questions = developerQuestions[0].developer_questions
+    if (questions === null) {
+      questions = [] 
+    }
   }
 
   console.log("value of questions after retrieving developer's questions: ", questions);
   let customQuestions = questions;
 
   //now use UDN to retrieve developer's knowledgeBase
-  let knowledgeBase
+  let knowledgeBase = ""
 
   let { data: developerKnowledgeBase, error2 } = await supabaseReal
   .from('user-details')
@@ -179,6 +189,10 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   } else if (developerKnowledgeBase) {
     console.log("data returned from attempt to get developer questions: ", developerKnowledgeBase);
     knowledgeBase = developerKnowledgeBase[0].knowledge_base
+    console.log("knowledgeBase is ", knowledgeBase)
+    if (knowledgeBase === null) {
+      knowledgeBase = ""  
+    }
   }
 
   console.log("value of knowledgeBase after retrieving developer's knowledgeBase: ", knowledgeBase);
@@ -186,7 +200,7 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   console.log("knowledgeBaseExists is ", knowledgeBaseExists)
   
   //now use UDN to retrieve developer's firstMessage
-  let firstMessage
+  let firstMessage = ""
 
   let { data: developerFirstMessage, error4 } = await supabaseReal
   .from('user-details')
@@ -194,11 +208,14 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
   .eq("unique_developer_number", uniqueDeveloperNumber)
 
   if (error4) {
-    console.log("error returned from attempt to get developer first message: ", error);
+    console.log("error returned from attempt to get developer first message: ", error4);
     return;
   } else if (developerFirstMessage) {
     console.log("data returned from attempt to get developer questions: ", developerFirstMessage);
     firstMessage = developerFirstMessage[0].first_message
+    if (firstMessage === null) {
+      firstMessage = ""  
+    }
   }
 
   console.log("value of firstMessage after retrieving developer's knowledgeBase: ", firstMessage);
@@ -228,7 +245,6 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
 
   let agentID;
   
-  let randomNumber = Math.round(Math.random());
 
 
   if ( countryCode === "UAE") {
@@ -242,25 +258,29 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
 
   const universalQuestions = [
       "What’s your name?",
-      //"What is your budget?",
-      //"Which area of Dubai do you prefer?",
-      //"When are you looking to move?"
+      "What is your budget?",
+      "Which area of Dubai do you prefer?",
+      "When are you looking to move?"
     ];
   
-  let allQuestions
+ 
+  
+  let allQuestions = []
+  if (customQuestions.length > 0) {
+    allQuestions = [...universalQuestions, ...customQuestions];
+  } else {
+    allQuestions = [...universalQuestions];
+  }
   
   
-  
-  allQuestions = [...universalQuestions, ...customQuestions];
-  allQuestions = [...universalQuestions, ...customQuestions];
   
   let questionNumber = allQuestions.length
   console.log("questionNumber after adding universal and customQuestions is: ", questionNumber);
 
 
   //can allow developer to send their own info for agent, by saving in database liek with questions, and then adding here in prompt to send.
-  let first_message
-  let prompt
+  let first_message = ""
+  let prompt = ""
   console.log("questionNumber intiialsied with length of custom questions is: ", questionNumber)
 
  /*if (agentID === "agent_1301k1r16hj3ew78sh3hds1s4y8x") {
@@ -309,8 +329,6 @@ if (knowledgeBaseExists && firstMessageExists) {
   //change Agent ID based on whether number is UAE or UK, i think?
   //perhaps leave it blank initially in .env, and then set it here? (but wouldn't work in production)
 
-  //const questionNumber = 4
-  //const questions = ["How much does a new Ferrari cost?", "What colour ferrari would you like?"]
 
   const completePrompt = `Your job is to collect answers to the following questions in a polite and direct way, then proactively end the call politely once all answers are obtained: ${allQuestions.join(", ")}
  
@@ -319,15 +337,11 @@ if (knowledgeBaseExists && firstMessageExists) {
   console.log("completePrompt is ", completePrompt)
 
 
-  //There are three universal questions that you must ask: ${JSON.stringify(universalQuestions)}
-  //add in standard questions that will always be asked, as need that for predefined supabase data columns
+  
  
 
 
-  //i need to store number/realNumber, questionNumber and questions in a global state
-    
-   const trialPrompt = `You are a agent calling a number to ask questions the user has given you. You need to ask the person who answers ${questionNumber} questions. The questions are: ${questions} `;
-   const trialFirstMessage = "Hi, I'm calling on behalf of my client. I would like to ask you a few questions.";
+  
 
    //will need to store these variables in global state in key which is the phone number
 
@@ -344,9 +358,7 @@ if (knowledgeBaseExists && firstMessageExists) {
 
    console.log("value of stuffFromFrontendFunctionNeededToStore is:", stuffFromFrontendFunctionNeedToStore);
 
-  if (!number) {
-    return reply.code(400).send({ error: 'Phone number is required' });
-  }
+  
 
   console.log("request.headers.host is:", request.headers.host)
 
@@ -360,6 +372,8 @@ if (knowledgeBaseExists && firstMessageExists) {
       //this url, and query params passed, are how to pass dynamic variables to agent for starting
       
       record: true,  // Enables recording
+      recordingTrack: 'both',    // inbound + outbound   ← important
+  recordingChannels: 'dual', // stereo: one party per channel
     statusCallback: `https://${request.headers.host}/call-status`,
     statusCallbackEvent: ['completed', 'recording-completed'], //this is the chatgpt code to enable recording of the code and a webhook call with transcript
     recordingStatusCallback: `https://${request.headers.host}/recording-status`, // NEW: Webhook for recording
@@ -639,9 +653,9 @@ async function transcribeAudio(audioBuffer) {
 
     const universals = [
   { key: "name",   question: "What is your name?" },
-  //{ key: "budget", question: "What is your budget?" },
-  //{ key: "area",   question: "Which area are you looking in?" },
-  //{ key: "when",   question: "When are you looking to move?" }
+  { key: "budget", question: "What is your budget?" },
+  { key: "area",   question: "Which area are you looking in?" },
+  { key: "when",   question: "When are you looking to move?" }
 
 ];
 
@@ -760,18 +774,18 @@ const messages = [
   { budget: 'two hundred thousand dollars' },
   { area: 'Central Dubai' }
 ] */        const name = parsedResponse.find(obj => obj.name)?.name;
-//const budget = parsedResponse.find(obj => obj.budget)?.budget;
-//const area = parsedResponse.find(obj => obj.area)?.area;
-//const when = parsedResponse.find(obj => obj.when)?.when;
+const budget = parsedResponse.find(obj => obj.budget)?.budget;
+const area = parsedResponse.find(obj => obj.area)?.area;
+const when = parsedResponse.find(obj => obj.when)?.when;
 
 console.log("Name:", name);
-//console.log("Budget:", budget);
-//console.log("Area:", area);
-//console.log("When:", when);
+console.log("Budget:", budget);
+console.log("Area:", area);
+console.log("When:", when);
 
-//const parsedBudget = parseFloat(
-  //(budget || '').replace(/[^0-9.]/g, '')
-//);          
+const parsedBudget = parseFloat(
+  (budget || '').replace(/[^0-9.]/g, '')
+);          
 const universalQuestions = ['name', 'budget', 'area', 'when'];
 
 // Extract custom questions
@@ -802,15 +816,12 @@ console.log("Custom Questions:", customQuestions);
             const leadWarmthRating = await getWarmth(transcript)
             console.log("leadWarmRating returned in main scrit is ", leadWarmthRating)
 
-            let budget = 8
-            let area = "e"
-            let when = "w"
-            //just temorary, for chris call, then turn back
+            
 
             const { data, error } = await supabaseReal
   .from('Call Lead Details')
   .insert([
-    { linked_user: developerUUID, phoneNumber: stringNumber, name: name, budget: budget, area: area, when: when, custom_questions: customQuestions, lead_warmth_rating: leadWarmthRating },
+    { linked_user: developerUUID, phoneNumber: stringNumber, name: name, budget: parsedBudget, area: area, when: when, custom_questions: customQuestions, lead_warmth_rating: leadWarmthRating },
   ])
   .select()
 
