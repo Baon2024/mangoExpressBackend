@@ -25,6 +25,18 @@ import getWarmth from './warmthRatingFunction.js';
 // Load environment variables from .env file
 dotenv.config();
 
+/* ⬇️ Crash visibility: place RIGHT HERE (earliest point after imports) */
+process.on('exit', (code) => {
+  console.error('[process.exit]', code);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err?.stack || err);
+});
+process.on('unhandledRejection', (reason, p) => {
+  console.error('[unhandledRejection]', reason);
+});
+/* ⬆️ Crash visibility */
+
 //getWarmth("prewarm").catch((e) => console.error("[prewarm]", e));
 
 const client = new OpenAI({
@@ -66,6 +78,7 @@ if (
   console.error('Missing required environment variables');
   throw new Error('Missing required environment variables');
 }
+
 
 const fastify = Fastify({ logger: true });
 
