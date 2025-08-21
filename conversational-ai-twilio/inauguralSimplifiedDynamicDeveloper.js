@@ -271,9 +271,9 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
 
   const universalQuestions = [
       "What’s your name?",
-      "What is your budget?",
-      "Which area of Dubai do you prefer?",
-      "When are you looking to move?"
+      ////"What is your budget?",
+      //"Which area of Dubai do you prefer?",
+      //"When are you looking to move?"
     ];
   
  
@@ -666,9 +666,9 @@ async function transcribeAudio(audioBuffer) {
 
     const universals = [
   { key: "name",   question: "What is your name?" },
-  { key: "budget", question: "What is your budget?" },
-  { key: "area",   question: "Which area are you looking in?" },
-  { key: "when",   question: "When are you looking to move?" }
+  //{ key: "budget", question: "What is your budget?" },
+  //{ key: "area",   question: "Which area are you looking in?" },
+  //{ key: "when",   question: "When are you looking to move?" }
 
 ];
 
@@ -787,18 +787,18 @@ const messages = [
   { budget: 'two hundred thousand dollars' },
   { area: 'Central Dubai' }
 ] */        const name = parsedResponse.find(obj => obj.name)?.name;
-const budget = parsedResponse.find(obj => obj.budget)?.budget;
-const area = parsedResponse.find(obj => obj.area)?.area;
-const when = parsedResponse.find(obj => obj.when)?.when;
+//const budget = parsedResponse.find(obj => obj.budget)?.budget;
+//const area = parsedResponse.find(obj => obj.area)?.area;
+//const when = parsedResponse.find(obj => obj.when)?.when;
 
 console.log("Name:", name);
-console.log("Budget:", budget);
-console.log("Area:", area);
-console.log("When:", when);
+//console.log("Budget:", budget);
+//console.log("Area:", area);
+//console.log("When:", when);
 
-const parsedBudget = parseFloat(
-  (budget || '').replace(/[^0-9.]/g, '')
-);          
+//const parsedBudget = parseFloat(
+  //(budget || '').replace(/[^0-9.]/g, '')
+//);          
 const universalQuestions = ['name', 'budget', 'area', 'when'];
 
 // Extract custom questions
@@ -832,9 +832,9 @@ console.log("Custom Questions:", customQuestions);
             
 
             const { data, error } = await supabaseReal
-  .from('Call Lead Details')
+  .from('Call Lead Details_duplicateCustom')
   .insert([
-    { linked_user: developerUUID, phoneNumber: stringNumber, name: name, budget: parsedBudget, area: area, when: when, custom_questions: customQuestions, lead_warmth_rating: leadWarmthRating },
+    { linked_user: developerUUID, phoneNumber: stringNumber, name: name/*, budget: parsedBudget, area: area, when: when*/, custom_questions: customQuestions, lead_warmth_rating: leadWarmthRating },
   ])
   .select()
 
