@@ -21,6 +21,7 @@ import { assembleAnswerWithLLm } from './assembleAnswerWithLLm.js';
 import fetch from 'node-fetch';
 import { supabaseReal } from './supabase.js';
 import getWarmth from './warmthRatingFunction.js';
+import getArabicVersion from './arabicTranslator.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -262,6 +263,10 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
 
   if ( countryCode === "UAE") {
     agentID = "agent_1301k1r16hj3ew78sh3hds1s4y8x" //if country code is UAE, agent with be arabic one
+    //need to translate each of firstmessage, questions, and knowledge base to arabic
+    firstMessage = await getArabicVersion(firstMessage)
+    knowledgeBase = await getArabicVersion(knowledgeBase)
+    questions = await getArabicVersion(questions)
   } else {
     agentID =  "agent_8901k1p8n0hyf6s8nm6sh324c3zc"
   }
@@ -269,12 +274,22 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
 
   console.log("agent id chosen is: ", agentID);
 
-  const universalQuestions = [
-      "What’s your name?",
-      "What is your budget?",
-      //"Which area of Dubai do you prefer?",
-      "When are you looking to move?"
-    ];
+  const universalQuestionsSelection = [
+    
+    {
+      agentID: "agent_8901k1p8n0hyf6s8nm6sh324c3zc",
+      universalQuestions: ["What’s your name?", "What is your budget?", "When are you looking to move?"]
+    },
+    {
+      agentID: "agent_1301k1r16hj3ew78sh3hds1s4y8x",
+      universalQuestions: ["ما اسمك؟","ما ميزانيتك؟","متى تخطط للانتقال؟"]
+    }
+
+  ]
+
+  const universalQuestions = universalQuestionsSelection.filter(language => language.agentID === agentID)[0].universalQuestions
+  console.log("universalQuestions selected based on agentID are, ", universalQuestions)
+
   
  
   
