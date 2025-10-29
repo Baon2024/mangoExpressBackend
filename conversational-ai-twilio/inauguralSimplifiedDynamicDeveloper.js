@@ -21,7 +21,7 @@ import { assembleAnswerWithLLm } from './assembleAnswerWithLLm.js';
 import fetch from 'node-fetch';
 import { supabaseReal } from './supabase.js';
 import getWarmth from './warmthRatingFunction.js';
-import getArabicVersion from './arabicTranslator.js';
+import { getArabicVersion, getArabicVersionQuestionsArray } from './arabicTranslator.js'
 
 // Load environment variables from .env file
 dotenv.config();
@@ -266,7 +266,7 @@ fastify.post('/outbound-call/:uniqueDeveloperNumber', async (request, reply) => 
     //need to translate each of firstmessage, questions, and knowledge base to arabic
     firstMessage = await getArabicVersion(firstMessage)
     knowledgeBase = await getArabicVersion(knowledgeBase)
-    questions = await getArabicVersion(questions)
+    questions = await getArabicVersionQuestionsArray(questions)
   } else {
     agentID =  "agent_8901k1p8n0hyf6s8nm6sh324c3zc"
   }
