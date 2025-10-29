@@ -92,14 +92,16 @@ export async function getArabicVersionQuestionsArray(input) {
     }
 
     // Ensure strings and preserve non-Arabic originals if the model changed them
+    console.log("returned arabic questions array is, ", out)
     return out.map((s, i) => String(s ?? items[i]));
+    
 
   } catch (e) {
     console.log("error from trying to translate arabic array of questions is, ", e)
 }
 }
 
-let result = await getArabicVersionQuestionsArray(questionsEnglish)
-console.log("result is, ", result)
+//let result = await getArabicVersionQuestionsArray(questionsEnglish)
+//console.log("result is, ", result)
 
 //getArabicVersion(example)
